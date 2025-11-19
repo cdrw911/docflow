@@ -2,8 +2,8 @@
 AI + Script 驅動的 Word / Google Docs 產稿流程
 
 
-SPEC  讀取   ./dev/docs/spec.md
-初期想法  讀取    ./dev/docs/plan.md 
+SPEC  讀取   .dev/docs/spec.md
+初期想法  讀取    .dev/docs/plan.md 
 
 ---
 
