@@ -8,9 +8,11 @@ SPEC  讀取   .dev/docs/spec.md
 ---
 
 
-本專案的目標是：  
-在「需要大量產出 Word / Google Docs 文稿」的情境下，  
+本專案的目標是：
+在「需要大量產出 Word / Google Docs 文稿」的情境下，
 用 **人 + CLI 型 AI（例如 Claude Code / Gemini CLI / Chat Codex CLI）+ script** 的方式，把重複、機械的流程自動化，只留下需要人判斷的部分給編輯處理。
+
+> 延伸閱讀：若要在 Python 端批次產出 `.docx`，請參考 `docs/notes/python_docx_generation.md` 的工具比較與建議流程。
 
 ---
 
