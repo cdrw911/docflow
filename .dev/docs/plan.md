@@ -556,4 +556,3 @@ python scripts/generate_doc_outputs.py --type 採訪稿 outputs/採訪稿/採訪
 
 * `generate_doc_outputs.py` 目前欄位解析很陽春，標題命名稍微改就抓不到，需要你之後依實際 Markdown 結構加強。
 * pandoc 轉 Word 雖然穩定，但版面細節（字型、段落樣式）若有嚴格 DTP 要求，可能還是得在 Word 模板（reference docx）上再微調。
-

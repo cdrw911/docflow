@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(~/lyScripts/.venv/bin/python:*)",
+      "Bash(~/lyScripts/.venv/bin/pip install:*)",
+      "Bash(~/lyScripts/.venv/bin/pip search:*)",
+      "Bash(~/lyScripts/.venv/bin/pip index:*)",
+      "Bash(VIRTUAL_ENV=~/lyScripts/.venv ~/lyScripts/.venv/bin/pre-commit:*)",
+      "Bash(~/lyScripts/.venv/bin/pre-commit run --all-files)",
+      "Bash(cat:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

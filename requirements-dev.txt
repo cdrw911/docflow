@@ -1,0 +1,25 @@
+# docflow - Development dependencies
+# 開發環境依賴
+
+# 測試工具
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+
+# 程式碼品質
+black>=23.7.0                  # 程式碼格式化
+isort>=5.12.0                  # import 排序
+pylint>=3.0.0                  # 程式碼檢查
+mypy>=1.7.0                    # 類型檢查
+ruff>=0.1.6                    # 快速 linter
+
+# Pre-commit hooks
+pre-commit>=3.5.0
+
+# 文檔工具
+sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0
+
+# 開發輔助
+ipython>=8.18.0
+ipdb>=0.13.13

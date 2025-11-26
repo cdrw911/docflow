@@ -1,0 +1,13 @@
+# docflow - AI-driven Word/Docs document generation system
+# Python dependencies
+
+# 核心依賴（外部工具，需手動安裝）
+# pandoc>=2.19  # 需透過系統套件管理器安裝：brew install pandoc
+
+# Python 依賴
+pyyaml>=6.0.1                  # YAML 解析
+python-docx>=1.1.0             # Word 文件處理
+docxtpl>=0.18.0                # Word 模板填充
+
+# 可選依賴
+tqdm>=4.66.0                   # 進度條顯示

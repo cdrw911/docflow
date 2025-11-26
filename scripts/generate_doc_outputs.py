@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 docflow - 文稿轉換工具
 
@@ -19,10 +18,15 @@ import pathlib
 import re
 import subprocess
 import sys
-from typing import Dict, Any, List
+from datetime import date, datetime
+from typing import Any, Dict, List
+
+import yaml
 
 
-def md_to_docx(md_path: pathlib.Path, docx_path: pathlib.Path, reference_docx: pathlib.Path = None) -> None:
+def md_to_docx(
+    md_path: pathlib.Path, docx_path: pathlib.Path, reference_docx: pathlib.Path = None
+) -> None:
     """使用 pandoc 將 Markdown 轉為 Word"""
     cmd = ["pandoc", str(md_path), "-o", str(docx_path)]
 
@@ -31,7 +35,7 @@ def md_to_docx(md_path: pathlib.Path, docx_path: pathlib.Path, reference_docx: p
         cmd.extend(["--reference-doc", str(reference_docx)])
 
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
         print(f"✓ 已轉換為 Word：{docx_path}")
     except subprocess.CalledProcessError as e:
         print(f"✗ pandoc 轉換失敗：{e.stderr}", file=sys.stderr)
@@ -43,25 +47,61 @@ def md_to_docx(md_path: pathlib.Path, docx_path: pathlib.Path, reference_docx: p
 
 
 def extract_yaml_frontmatter(md_text: str) -> Dict[str, Any]:
-    """提取 YAML front matter"""
+    """
+    提取 YAML front matter
+
+    使用 PyYAML 正確解析 YAML，支援：
+    - 嵌套結構
+    - 列表
+    - 多行值
+    - 各種 YAML 標準語法
+    """
     frontmatter = {}
 
     # 匹配 YAML front matter (在文件開頭的 --- 包圍區塊)
-    pattern = r'^---\s*\n(.*?)\n---\s*\n'
+    pattern = r"^---\s*\n(.*?)\n---\s*\n"
     match = re.search(pattern, md_text, re.DOTALL | re.MULTILINE)
 
     if match:
         yaml_content = match.group(1)
-        # 簡單解析 YAML (只處理 key: value 格式)
-        for line in yaml_content.split('\n'):
-            line = line.strip()
-            if ':' in line:
-                key, value = line.split(':', 1)
-                key = key.strip()
-                value = value.strip().strip('"').strip("'")
-                frontmatter[key] = value
+        try:
+            # 使用 PyYAML 正確解析
+            frontmatter = yaml.safe_load(yaml_content)
+            if frontmatter is None:
+                frontmatter = {}
+        except yaml.YAMLError as e:
+            print(f"⚠ YAML 解析警告：{e}", file=sys.stderr)
+            # 降級到簡單解析
+            for line in yaml_content.split("\n"):
+                line = line.strip()
+                if ":" in line and not line.startswith("#"):
+                    key, value = line.split(":", 1)
+                    key = key.strip()
+                    value = value.strip().strip('"').strip("'")
+                    frontmatter[key] = value
 
-    return frontmatter
+    # 轉換所有非 JSON 可序列化的物件為字串
+    return _convert_to_json_serializable(frontmatter)
+
+
+def _convert_to_json_serializable(obj: Any) -> Any:
+    """
+    將物件轉換為 JSON 可序列化的格式
+
+    處理常見的 YAML 解析結果類型：
+    - datetime.date -> ISO 格式字串
+    - datetime.datetime -> ISO 格式字串
+    - dict -> 遞迴處理
+    - list -> 遞迴處理
+    """
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+    elif isinstance(obj, dict):
+        return {k: _convert_to_json_serializable(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_to_json_serializable(item) for item in obj]
+    else:
+        return obj
 
 
 def extract_fields_from_md(md_text: str, doc_type: str) -> Dict[str, Any]:
@@ -83,13 +123,14 @@ def extract_fields_from_md(md_text: str, doc_type: str) -> Dict[str, Any]:
         fields["frontmatter"] = frontmatter
 
     # 主標
-    m_headline = re.search(r'^#\s+主標\s*\n+(.+?)(?=\n#|\Z)', md_text, re.MULTILINE | re.DOTALL)
+    m_headline = re.search(r"^#\s+主標\s*\n+(.+?)(?=\n#|\Z)", md_text, re.MULTILINE | re.DOTALL)
     if m_headline:
         fields["headline"] = m_headline.group(1).strip()
 
     # 眉標或座右銘
-    m_subhead = re.search(r'^#\s+(眉標|座右銘|眉標\(座右銘\)|眉標（座右銘）)\s*\n+(.+?)(?=\n#|\Z)',
-                          md_text, re.MULTILINE | re.DOTALL)
+    m_subhead = re.search(
+        r"^#\s+(眉標|座右銘|眉標\(座右銘\)|眉標（座右銘）)\s*\n+(.+?)(?=\n#|\Z)", md_text, re.MULTILINE | re.DOTALL
+    )
     if m_subhead:
         fields["subhead"] = m_subhead.group(2).strip()
 
@@ -98,18 +139,18 @@ def extract_fields_from_md(md_text: str, doc_type: str) -> Dict[str, Any]:
         fields["subject_person"] = frontmatter["subject_person"]
 
     # 受訪者經歷
-    m_bio = re.search(r'^#\s+受訪者經歷\s*\n+(.+?)(?=\n#|\Z)', md_text, re.MULTILINE | re.DOTALL)
+    m_bio = re.search(r"^#\s+受訪者經歷\s*\n+(.+?)(?=\n#|\Z)", md_text, re.MULTILINE | re.DOTALL)
     if m_bio:
         fields["bio"] = m_bio.group(1).strip()
 
     # 摘要
-    m_summary = re.search(r'^#\s+摘要\s*\n+(.+?)(?=\n#|\Z)', md_text, re.MULTILINE | re.DOTALL)
+    m_summary = re.search(r"^#\s+摘要\s*\n+(.+?)(?=\n#|\Z)", md_text, re.MULTILINE | re.DOTALL)
     if m_summary:
         fields["summary"] = m_summary.group(1).strip()
 
     # 段落標題（段一、段二、段三、段四等）
     sections: List[Dict[str, Any]] = []
-    section_pattern = r'^#\s+(段[一二三四五六七八九十]+)[\s　]+(.+?)$'
+    section_pattern = r"^#\s+(段[一二三四五六七八九十]+)[\s　]+(.+?)$"
 
     for m in re.finditer(section_pattern, md_text, flags=re.MULTILINE):
         section_num = m.group(1)  # 段一、段二等
@@ -117,7 +158,7 @@ def extract_fields_from_md(md_text: str, doc_type: str) -> Dict[str, Any]:
 
         # 提取該段落的內容（從這個標題到下一個一級標題之前）
         section_start = m.end()
-        next_header = re.search(r'\n#\s+', md_text[section_start:])
+        next_header = re.search(r"\n#\s+", md_text[section_start:])
 
         if next_header:
             section_end = section_start + next_header.start()
@@ -126,11 +167,15 @@ def extract_fields_from_md(md_text: str, doc_type: str) -> Dict[str, Any]:
 
         section_content = md_text[section_start:section_end].strip()
 
-        sections.append({
-            "number": section_num,
-            "title": section_title,
-            "content": section_content[:200] + "..." if len(section_content) > 200 else section_content
-        })
+        sections.append(
+            {
+                "number": section_num,
+                "title": section_title,
+                "content": section_content[:200] + "..."
+                if len(section_content) > 200
+                else section_content,
+            }
+        )
 
     if sections:
         fields["sections"] = sections
@@ -138,7 +183,7 @@ def extract_fields_from_md(md_text: str, doc_type: str) -> Dict[str, Any]:
     # 針對腳本類型，額外提取核心訊息
     if doc_type == "腳本":
         core_messages = []
-        core_msg_pattern = r'[-•]\s*核心訊息\s*[1234][:：]\s*(.+)'
+        core_msg_pattern = r"[-•]\s*核心訊息\s*[1234][:：]\s*(.+)"
         for m in re.finditer(core_msg_pattern, md_text, flags=re.MULTILINE):
             core_messages.append(m.group(1).strip())
         if core_messages:
@@ -154,27 +199,12 @@ def main():
 範例：
   python scripts/generate_doc_outputs.py --type 腳本 outputs/腳本/腳本.md
   python scripts/generate_doc_outputs.py --type 採訪稿 outputs/採訪稿/採訪稿.md --reference reference/專刊版型_reference.docx
-        """
+        """,
     )
-    parser.add_argument(
-        "--type",
-        choices=["腳本", "採訪稿"],
-        required=True,
-        help="指定輸出類型（腳本 / 採訪稿）"
-    )
-    parser.add_argument(
-        "src_md",
-        help="來源 Markdown 檔路徑（由 AI 產出的腳本.md 或 採訪稿.md）"
-    )
-    parser.add_argument(
-        "--out-dir",
-        default="outputs",
-        help="輸出根目錄，預設為 ./outputs"
-    )
-    parser.add_argument(
-        "--reference",
-        help="reference.docx 路徑（選填），用於套用 Word 樣式"
-    )
+    parser.add_argument("--type", choices=["腳本", "採訪稿"], required=True, help="指定輸出類型（腳本 / 採訪稿）")
+    parser.add_argument("src_md", help="來源 Markdown 檔路徑（由 AI 產出的腳本.md 或 採訪稿.md）")
+    parser.add_argument("--out-dir", default="outputs", help="輸出根目錄，預設為 ./outputs")
+    parser.add_argument("--reference", help="reference.docx 路徑（選填），用於套用 Word 樣式")
     args = parser.parse_args()
 
     # 檢查來源檔案
@@ -207,7 +237,7 @@ def main():
             reference_docx = None
 
     print(f"\n{'='*60}")
-    print(f"docflow - 文稿轉換工具")
+    print("docflow - 文稿轉換工具")
     print(f"{'='*60}")
     print(f"類型：{args.type}")
     print(f"來源：{src_path}")
@@ -226,8 +256,8 @@ def main():
     # 2. 呼叫 pandoc 產出 Word
     try:
         md_to_docx(md_out, doc_out, reference_docx)
-    except Exception as e:
-        print(f"✗ Word 轉換失敗，但會繼續產生 JSON", file=sys.stderr)
+    except Exception:
+        print("✗ Word 轉換失敗，但會繼續產生 JSON", file=sys.stderr)
 
     # 3. 簡單解析欄位，產出 JSON
     fields = extract_fields_from_md(md_text, args.type)
@@ -236,17 +266,14 @@ def main():
         "source_markdown": str(src_path),
         "generated_markdown": str(md_out),
         "generated_docx": str(doc_out),
-        "fields": fields
+        "fields": fields,
     }
 
-    json_out.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8"
-    )
+    json_out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"✓ 欄位說明 JSON：{json_out}")
 
     print(f"\n{'='*60}")
-    print(f"✓ 轉換完成！")
+    print("✓ 轉換完成！")
     print(f"{'='*60}\n")
 
     # 顯示提取的欄位摘要
@@ -259,7 +286,7 @@ def main():
         print(f"  受訪者：{fields['subject_person']}")
     if "sections" in fields:
         print(f"  段落數：{len(fields['sections'])}")
-        for sec in fields['sections']:
+        for sec in fields["sections"]:
             print(f"    - {sec['number']}　{sec['title']}")
     print()
 

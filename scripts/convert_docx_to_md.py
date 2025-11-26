@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 docx 轉 Markdown 工具
 
@@ -28,20 +27,23 @@ def docx_to_md(docx_path: pathlib.Path, md_path: pathlib.Path = None) -> pathlib
         輸出的 md 檔案路徑
     """
     if md_path is None:
-        md_path = docx_path.with_suffix('.md')
+        md_path = docx_path.with_suffix(".md")
 
     cmd = [
         "pandoc",
         str(docx_path),
-        "-f", "docx",
-        "-t", "markdown",
-        "-o", str(md_path),
+        "-f",
+        "docx",
+        "-t",
+        "markdown",
+        "-o",
+        str(md_path),
         "--wrap=none",  # 不自動換行
-        "--extract-media=."  # 提取圖片到當前目錄
+        "--extract-media=.",  # 提取圖片到當前目錄
     ]
 
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True)
         print(f"✓ 已轉換為 Markdown：{md_path}")
         return md_path
     except subprocess.CalledProcessError as e:
@@ -60,16 +62,10 @@ def main():
 範例：
   python scripts/convert_docx_to_md.py input/原稿.docx
   python scripts/convert_docx_to_md.py input/原稿.docx -o docs/sources/原稿.md
-        """
+        """,
     )
-    parser.add_argument(
-        "docx_file",
-        help="輸入的 Word 文件（.docx）"
-    )
-    parser.add_argument(
-        "-o", "--output",
-        help="輸出的 Markdown 檔案路徑（選填，預設與輸入檔同名）"
-    )
+    parser.add_argument("docx_file", help="輸入的 Word 文件（.docx）")
+    parser.add_argument("-o", "--output", help="輸出的 Markdown 檔案路徑（選填，預設與輸入檔同名）")
     args = parser.parse_args()
 
     # 檢查輸入檔案
@@ -78,7 +74,7 @@ def main():
         print(f"✗ 檔案不存在：{docx_path}", file=sys.stderr)
         sys.exit(1)
 
-    if not docx_path.suffix.lower() in ['.docx', '.doc']:
+    if docx_path.suffix.lower() not in [".docx", ".doc"]:
         print(f"✗ 檔案格式錯誤：{docx_path.suffix}（需要 .docx 或 .doc）", file=sys.stderr)
         sys.exit(1)
 
@@ -86,7 +82,7 @@ def main():
     md_path = pathlib.Path(args.output).resolve() if args.output else None
 
     print(f"\n{'='*60}")
-    print(f"docx → Markdown 轉換工具")
+    print("docx → Markdown 轉換工具")
     print(f"{'='*60}")
     print(f"輸入：{docx_path}")
     if md_path:
@@ -98,7 +94,7 @@ def main():
         result_path = docx_to_md(docx_path, md_path)
 
         print(f"\n{'='*60}")
-        print(f"✓ 轉換完成！")
+        print("✓ 轉換完成！")
         print(f"{'='*60}")
         print(f"輸出檔案：{result_path}")
         print(f"檔案大小：{result_path.stat().st_size:,} bytes")

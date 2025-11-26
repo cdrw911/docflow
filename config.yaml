@@ -1,0 +1,120 @@
+# docflow 配置檔案
+# AI-driven Word/Docs document generation system configuration
+
+# 輸出設定
+output:
+  root_dir: "outputs"
+  types:
+    - "腳本"
+    - "採訪稿"
+
+  # 檔案命名格式
+  file_patterns:
+    markdown: "{type}.md"
+    docx: "{type}_templete.docx"
+    json: "{type}說明.json"
+
+# Pandoc 轉換選項
+pandoc:
+  options:
+    - "--wrap=none"           # 不自動換行
+    - "--standalone"          # 產生獨立文件
+
+  # 媒體檔案提取目錄
+  media_dir: "./media"
+
+  # DOCX 轉換特定選項
+  docx_options:
+    - "--extract-media={media_dir}"
+
+# 檔案處理限制
+limits:
+  # 最大檔案大小 (bytes) - 100MB
+  max_file_size: 104857600
+
+  # 內容預覽長度
+  content_preview_length: 200
+
+  # 支援的檔案副檔名
+  allowed_docx_extensions:
+    - ".docx"
+    - ".doc"
+
+  allowed_md_extensions:
+    - ".md"
+    - ".markdown"
+
+# 欄位提取設定
+field_extraction:
+  # 標題層級
+  header_levels:
+    primary: 1      # # 主標
+    secondary: 2    # ## 副標
+
+  # 段落模式（正則表達式）
+  section_pattern: "^段[一二三四五六七八九十]+"
+
+  # 核心訊息模式（用於腳本）
+  core_message_pattern: "[-•]\\s*核心訊息\\s*[1234][:：]\\s*(.+)"
+
+# YAML Front Matter 設定
+yaml_settings:
+  # 是否嚴格驗證 YAML 格式
+  strict_mode: false
+
+  # 預設編碼
+  encoding: "utf-8"
+
+# 模板設定
+templates:
+  directory: "templates"
+  reference_docx_dir: "reference"
+
+  # 模板類型對應
+  mappings:
+    腳本:
+      template: "腳本_template.md"
+      reference: "專刊版型_reference.docx"
+    採訪稿:
+      template: "採訪稿_template.md"
+      reference: "專刊版型_reference.docx"
+
+# 批次處理設定
+batch:
+  # 平行處理數量
+  max_workers: 4
+
+  # 是否顯示進度條
+  show_progress: true
+
+  # 快取設定
+  enable_cache: true
+  cache_dir: ".cache"
+
+# Logging 設定
+logging:
+  level: "INFO"           # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+  # Log 檔案
+  file:
+    enabled: true
+    path: "docflow.log"
+    max_size: 10485760    # 10MB
+    backup_count: 5
+
+  # Console 輸出
+  console:
+    enabled: true
+    colorized: true
+
+# 進階選項
+advanced:
+  # 是否驗證轉換結果
+  validate_output: true
+
+  # 是否產生除錯資訊
+  debug_mode: false
+
+  # 暫存檔保留
+  keep_temp_files: false
